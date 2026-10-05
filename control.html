@@ -26,7 +26,7 @@
    const response=await fetch('/api/control',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+password.value},body:JSON.stringify({action}),cache:'no-store',credentials:'omit',signal:AbortSignal.timeout(12000)});
    const result=await response.json();
    if(!response.ok||!result.ok)throw Error(result.error||'Команду не надіслано.');
-   status.textContent=action==='cancel'?'Команду скасовано. Уже виконані переходи скасувати неможливо.':'Команду надіслано на 60 секунд. Активні вкладки отримають її під час наступної перевірки — зазвичай протягом 20 секунд.';
+   status.textContent=action==='cancel'?'Команду скасовано. Уже виконані переходи скасувати неможливо.':'Команду надіслано на 2 хвилини. Підключені вкладки отримають WebSocket-сповіщення одразу після надсилання.';
    password.value='';
   }catch(error){status.textContent=error.name==='TimeoutError'?'Сервер не відповів. Спробуй ще раз.':error.message;}
   finally{buttons.forEach(b=>b.disabled=false);}
