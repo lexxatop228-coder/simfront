@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Керування · Simfront Commander</title>
+<style>
+:root{color-scheme:dark;font-family:Arial,Helvetica,sans-serif;color:#e5efff;background:#0c1726}*{box-sizing:border-box}body{min-height:100vh;margin:0;display:grid;place-items:center;padding:20px}main{width:min(100%,580px);padding:30px;border:1px solid #3f587a;background:#14243a;border-radius:14px;box-shadow:0 12px 40px #0004}h1{font-size:25px;margin:0 0 10px}p{line-height:1.6;color:#bbcee9}label{display:block;margin:24px 0 8px;font-weight:600}input{width:100%;padding:13px;border:1px solid #526d91;border-radius:7px;background:#0c192b;color:#fff;font:inherit}button{width:100%;margin-top:14px;padding:14px;border:1px solid #719ed5;border-radius:7px;background:#28558c;color:#fff;font:600 16px Arial;cursor:pointer}button.secondary{background:#1a2d46;border-color:#4a6485;font-size:14px}button:disabled{opacity:.5;cursor:default}:focus-visible{outline:2px solid #a6c9ff;outline-offset:3px}#status{min-height:48px;margin-bottom:0;overflow-wrap:anywhere}a{color:#a9c9ff}@media(max-width:480px){main{padding:22px}h1{font-size:22px}}
+</style></head><body><main>
+<h1>Simfront Commander</h1>
+<p>Команда для відкритих вкладок гри: перезавантажити сайт і перейти до <a href="https://t.me/simfrontcomander" target="_blank" rel="noopener noreferrer">Telegram-каналу</a>.</p>
+<form id="control-form">
+<label for="password">Пароль адміністратора</label>
+<input id="password" type="password" autocomplete="current-password" required>
+<button id="send" type="submit">Перезапустити у всіх → Telegram</button>
+<button id="cancel" type="button" class="secondary">Скасувати невиконану команду</button>
+</form>
+<p id="status" role="status" aria-live="polite"></p>
+</main><script>
+(()=>{
+ const form=document.getElementById('control-form'),password=document.getElementById('password'),status=document.getElementById('status'),buttons=[...document.querySelectorAll('button')];
+ if(location.origin!=='https://simfront1.vercel.app'){buttons.forEach(b=>b.disabled=true);status.textContent='Опублікуй цей файл разом із грою та відкрий https://simfront1.vercel.app/control.html';return;}
+ const send=async action=>{
+  if(!password.value){password.reportValidity();return;}
+  buttons.forEach(b=>b.disabled=true);status.textContent='Надсилання команди…';
+  try{
+   const response=await fetch('/api/control',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+password.value},body:JSON.stringify({action}),cache:'no-store',credentials:'omit',signal:AbortSignal.timeout(12000)});
+   const result=await response.json();
+   if(!response.ok||!result.ok)throw Error(result.error||'Команду не надіслано.');
+   status.textContent=action==='cancel'?'Команду скасовано. Уже виконані переходи скасувати неможливо.':'Команду надіслано на 60 секунд. Активні вкладки отримають її під час наступної перевірки — зазвичай протягом 20 секунд.';
+   password.value='';
+  }catch(error){status.textContent=error.name==='TimeoutError'?'Сервер не відповів. Спробуй ще раз.':error.message;}
+  finally{buttons.forEach(b=>b.disabled=false);}
+ };
+ form.addEventListener('submit',event=>{event.preventDefault();send('restart-telegram');});
+ document.getElementById('cancel').addEventListener('click',()=>send('cancel'));
+})();
+</script></body></html>
