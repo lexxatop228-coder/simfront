@@ -37,16 +37,9 @@ module.exports=async function(req,res){
    if(raw){try{const c=typeof raw==='string'?JSON.parse(raw):raw;if(c&&c.action==='restart-telegram'&&typeof c.id==='string'&&Number.isFinite(c.expiresAt)&&c.expiresAt>Date.now())command=c;}catch{}}
    return send(200,{command,serverTime:Date.now()});
   }
-  const ablyKey=process.env.ABLY_API_KEY?.trim();
-  if(!ablyKey||!ablyKey.includes(':'))return send(503,{error:'Потрібно налаштувати ABLY_API_KEY на Vercel.'});
-  const publish=async()=>{
-   const response=await fetch('https://rest.ably.io/channels/simfront%3Acontrol/messages',{method:'POST',headers:{Authorization:'Basic '+Buffer.from(ablyKey).toString('base64'),'Content-Type':'application/json'},body:JSON.stringify({name:'control',data:{changed:true}}),signal:AbortSignal.timeout(8000)});
-   if(!response.ok)throw Error('Realtime unavailable');
-  };
-  if(action==='cancel'){await redis(['DEL',KEY]);try{await publish();}catch{return send(503,{error:'Команду скасовано в Redis, але WebSocket-сповіщення не надіслано. Перевірте Ably.'});}return send(200,{ok:true,command:null});}
-  const command={id:randomUUID(),action,issuedAt:Date.now(),expiresAt:Date.now()+120000};
-  await redis(['SET',KEY,JSON.stringify(command),'EX',120]);
-  try{await publish();}catch{return send(503,{error:'Команду збережено на 2 хвилини, але WebSocket-сповіщення не надіслано. Перевірте Ably або скасуйте команду.'});}
+  if(action==='cancel'){await redis(['DEL',KEY]);return send(200,{ok:true,command:null});}
+  const command={id:randomUUID(),action,issuedAt:Date.now(),expiresAt:Date.now()+600000};
+  await redis(['SET',KEY,JSON.stringify(command),'EX',600]);
   return send(200,{ok:true,command});
  }catch{return send(503,{error:'Не вдалося зберегти або прочитати команду. Перевірте підключення Redis.'});}
 };
